@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, StyleSheet, ScrollView, Image } from 'react-native';
-import { Text, Button, Card, Surface, ActivityIndicator, ProgressBar } from 'react-native-paper';
+import { Text, Button, Card, ActivityIndicator, ProgressBar } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { QR_TOKEN_PREFIX } from '../../constants/config';
 
-// Tạo QR token động mỗi 5 giây
-function generateQRToken(classId) {
-  const window = Math.floor(Date.now() / 5000);
-  return `EDUCHECK-${classId}-${window}`;
+// QR token cố định theo classId — sử dụng QR_TOKEN_PREFIX từ constants/config.js
+function getStaticQRToken(classId) {
+  return `${QR_TOKEN_PREFIX}${classId}`;
 }
 
 function getQRImageUrl(token) {
-  return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(token)}&bgcolor=ffffff&color=1565C0&margin=10`;
+  return `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(token)}&bgcolor=ffffff&color=1565C0&margin=12`;
 }
 
 export default function CreateSessionScreen() {
@@ -20,54 +20,31 @@ export default function CreateSessionScreen() {
 
   const [sessionActive, setSessionActive] = useState(false);
   const [qrToken, setQrToken] = useState('');
-  const [countdown, setCountdown] = useState(5);
   const [elapsed, setElapsed] = useState(0);
   const [presentCount, setPresentCount] = useState(0);
   const [qrLoading, setQrLoading] = useState(false);
-  const intervalRef = useRef(null);
-  const countTickRef = useRef(null);
   const elapsedRef = useRef(null);
 
   const startSession = () => {
-    const token = generateQRToken(classInfo.id);
+    const token = getStaticQRToken(classInfo.id);
     setSessionActive(true);
     setQrToken(token);
-    setCountdown(5);
     setQrLoading(true);
 
-    intervalRef.current = setInterval(() => {
-      setQrToken(generateQRToken(classInfo.id));
-      setCountdown(5);
-      setQrLoading(true);
-      setPresentCount(p => Math.min(p + Math.floor(Math.random() * 3), classInfo.students));
-    }, 5000);
-
-    countTickRef.current = setInterval(() => {
-      setCountdown(c => (c <= 1 ? 5 : c - 1));
-    }, 1000);
-
+    // Chỉ đếm thời gian và simulate sinh viên điểm danh
     elapsedRef.current = setInterval(() => {
       setElapsed(e => e + 1);
-    }, 1000);
+      setPresentCount(p => Math.min(p + Math.floor(Math.random() * 2), classInfo.students));
+    }, 3000);
   };
 
   const endSession = () => {
-    clearInterval(intervalRef.current);
-    clearInterval(countTickRef.current);
     clearInterval(elapsedRef.current);
-    navigation.navigate('LiveMonitor', {
-      classInfo,
-      presentCount,
-      totalStudents: classInfo.students,
-    });
+    navigation.navigate('LiveMonitor', { classInfo, presentCount, totalStudents: classInfo.students });
   };
 
   useEffect(() => {
-    return () => {
-      clearInterval(intervalRef.current);
-      clearInterval(countTickRef.current);
-      clearInterval(elapsedRef.current);
-    };
+    return () => { clearInterval(elapsedRef.current); };
   }, []);
 
   const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
@@ -76,28 +53,30 @@ export default function CreateSessionScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
       {/* Class Info */}
-      <Card style={styles.infoCard}>
-        <Card.Content>
-          <Text variant="titleLarge" style={{ fontWeight: 'bold', color: '#1565C0' }}>{classInfo.subject}</Text>
-          <Text variant="bodyMedium" style={{ color: '#666', marginTop: 4 }}>
-            Lớp {classInfo.class} • {classInfo.room} • {classInfo.time}
-          </Text>
-          <Text variant="bodyMedium" style={{ color: '#666' }}>{classInfo.students} sinh viên</Text>
-        </Card.Content>
-      </Card>
+      <View style={styles.infoCard}>
+        <View style={styles.infoLeft}>
+          <Text style={styles.infoSubject}>{classInfo.subject}</Text>
+          <Text style={styles.infoDetail}>🏫 {classInfo.room} • ⏰ {classInfo.time}</Text>
+          <Text style={styles.infoDetail}>📌 Lớp {classInfo.class} • 👥 {classInfo.students} sinh viên</Text>
+        </View>
+      </View>
 
       {!sessionActive ? (
         <View style={styles.startContainer}>
-          <Text style={styles.startIcon}>📋</Text>
-          <Text variant="bodyMedium" style={{ color: '#666', textAlign: 'center', marginBottom: 24 }}>
-            Nhấn bắt đầu để tạo mã QR điểm danh cho sinh viên.{'\n'}Mã QR sẽ tự động thay đổi mỗi 5 giây.
+          <View style={styles.startIconBox}>
+            <Text style={{ fontSize: 64 }}>📋</Text>
+          </View>
+          <Text style={styles.startTitle}>Sẵn sàng điểm danh</Text>
+          <Text style={styles.startSub}>
+            Mã QR cố định theo lớp học. Sinh viên quét mã này để điểm danh.
           </Text>
           <Button
             mode="contained"
             icon="play-circle"
             onPress={startSession}
             style={styles.startBtn}
-            contentStyle={{ paddingVertical: 10 }}
+            contentStyle={{ paddingVertical: 12 }}
+            buttonColor="#1565C0"
           >
             Bắt đầu điểm danh
           </Button>
@@ -105,21 +84,33 @@ export default function CreateSessionScreen() {
       ) : (
         <>
           {/* Timer */}
-          <Surface style={styles.timerCard} elevation={1}>
-            <Text variant="bodySmall" style={{ color: '#666' }}>Thời gian đã chạy</Text>
-            <Text variant="headlineMedium" style={{ color: '#1565C0', fontWeight: 'bold' }}>
-              {formatTime(elapsed)}
-            </Text>
-          </Surface>
+          <View style={styles.timerRow}>
+            <View style={styles.timerBox}>
+              <Text style={styles.timerLabel}>⏱ Thời gian</Text>
+              <Text style={styles.timerValue}>{formatTime(elapsed)}</Text>
+            </View>
+            <View style={styles.timerBox}>
+              <Text style={styles.timerLabel}>👥 Có mặt</Text>
+              <Text style={[styles.timerValue, { color: '#2E7D32' }]}>{presentCount}/{classInfo.students}</Text>
+            </View>
+            <View style={styles.timerBox}>
+              <Text style={styles.timerLabel}>📊 Tỉ lệ</Text>
+              <Text style={[styles.timerValue, { color: '#1565C0' }]}>{Math.round(attendanceRate * 100)}%</Text>
+            </View>
+          </View>
 
-          {/* QR Code Display */}
+          {/* Progress */}
+          <ProgressBar progress={attendanceRate} color="#2E7D32" style={styles.progressBar} />
+
+          {/* QR Code */}
           <Card style={styles.qrCard}>
             <Card.Content style={{ alignItems: 'center' }}>
-              <Text variant="titleMedium" style={{ marginBottom: 12 }}>Mã QR điểm danh</Text>
+              <Text style={styles.qrTitle}>Mã QR điểm danh</Text>
+              <Text style={styles.qrSub}>Sinh viên quét mã này để điểm danh</Text>
               <View style={styles.qrWrapper}>
                 {qrLoading && (
-                  <View style={styles.qrLoadingOverlay}>
-                    <ActivityIndicator color="#1565C0" />
+                  <View style={styles.qrOverlay}>
+                    <ActivityIndicator color="#1565C0" size="large" />
                   </View>
                 )}
                 <Image
@@ -129,55 +120,20 @@ export default function CreateSessionScreen() {
                   onError={() => setQrLoading(false)}
                 />
               </View>
-              <View style={styles.countdownRow}>
-                <Text variant="bodySmall" style={{ color: '#666' }}>Mã mới sau: </Text>
-                <Text variant="bodyMedium" style={{ color: '#C62828', fontWeight: 'bold' }}>{countdown}s</Text>
+              <View style={styles.qrBadge}>
+                <Text style={styles.qrBadgeText}>🔒 Mã cố định theo lớp</Text>
               </View>
-              <ProgressBar
-                progress={countdown / 5}
-                color="#1565C0"
-                style={{ width: 200, height: 4, borderRadius: 2, marginTop: 8 }}
-              />
-              <Text variant="bodySmall" style={{ color: '#999', marginTop: 8, textAlign: 'center' }}>
-                {qrToken}
-              </Text>
+              <Text style={styles.tokenText}>{qrToken}</Text>
             </Card.Content>
           </Card>
-
-          {/* Live Stats */}
-          <Surface style={styles.statsCard} elevation={1}>
-            <View style={styles.statItem}>
-              <Text variant="headlineSmall" style={{ color: '#2E7D32', fontWeight: 'bold' }}>{presentCount}</Text>
-              <Text variant="bodySmall" style={{ color: '#666' }}>Có mặt</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.statItem}>
-              <Text variant="headlineSmall" style={{ color: '#C62828', fontWeight: 'bold' }}>
-                {classInfo.students - presentCount}
-              </Text>
-              <Text variant="bodySmall" style={{ color: '#666' }}>Chưa điểm danh</Text>
-            </View>
-            <View style={styles.divider} />
-            <View style={styles.statItem}>
-              <Text variant="headlineSmall" style={{ color: '#1565C0', fontWeight: 'bold' }}>
-                {Math.round(attendanceRate * 100)}%
-              </Text>
-              <Text variant="bodySmall" style={{ color: '#666' }}>Tỉ lệ</Text>
-            </View>
-          </Surface>
-
-          <ProgressBar
-            progress={attendanceRate}
-            color="#2E7D32"
-            style={{ marginBottom: 16, height: 8, borderRadius: 4 }}
-          />
 
           <Button
             mode="contained"
             icon="stop-circle"
             onPress={endSession}
-            style={[styles.startBtn, { backgroundColor: '#C62828' }]}
-            contentStyle={{ paddingVertical: 10 }}
+            style={styles.endBtn}
+            contentStyle={{ paddingVertical: 12 }}
+            buttonColor="#C62828"
           >
             Kết thúc & Chốt sổ
           </Button>
@@ -188,18 +144,29 @@ export default function CreateSessionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
-  infoCard: { borderRadius: 12, marginBottom: 16 },
-  startContainer: { alignItems: 'center', marginTop: 32, paddingHorizontal: 16 },
-  startIcon: { fontSize: 64, marginBottom: 16 },
-  startBtn: { borderRadius: 10, width: '100%' },
-  timerCard: { borderRadius: 10, padding: 16, alignItems: 'center', marginBottom: 16, backgroundColor: '#fff' },
-  qrCard: { borderRadius: 12, marginBottom: 16 },
-  qrWrapper: { width: 200, height: 200, justifyContent: 'center', alignItems: 'center' },
-  qrImage: { width: 200, height: 200, borderRadius: 8 },
-  qrLoadingOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E3F2FD', borderRadius: 8, zIndex: 1 },
-  countdownRow: { flexDirection: 'row', alignItems: 'center', marginTop: 12 },
-  statsCard: { flexDirection: 'row', borderRadius: 10, padding: 16, marginBottom: 12, backgroundColor: '#fff' },
-  statItem: { flex: 1, alignItems: 'center' },
-  divider: { width: 1, backgroundColor: '#E0E0E0' },
+  container: { flex: 1, backgroundColor: '#F0F4FF' },
+  infoCard: { backgroundColor: '#1565C0', borderRadius: 16, padding: 16, marginBottom: 16 },
+  infoLeft: {},
+  infoSubject: { color: '#fff', fontWeight: 'bold', fontSize: 18, marginBottom: 6 },
+  infoDetail: { color: '#BBDEFB', fontSize: 13, marginTop: 3 },
+  startContainer: { alignItems: 'center', marginTop: 24, paddingHorizontal: 16 },
+  startIconBox: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
+  startTitle: { fontSize: 20, fontWeight: 'bold', color: '#1565C0', marginBottom: 10 },
+  startSub: { color: '#888', textAlign: 'center', lineHeight: 20, marginBottom: 28 },
+  startBtn: { borderRadius: 14, width: '100%' },
+  timerRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
+  timerBox: { flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 14, alignItems: 'center', elevation: 2 },
+  timerLabel: { color: '#888', fontSize: 11, marginBottom: 4 },
+  timerValue: { fontSize: 20, fontWeight: 'bold', color: '#1A1A2E' },
+  progressBar: { height: 8, borderRadius: 4, marginBottom: 16 },
+  qrCard: { borderRadius: 20, marginBottom: 16, elevation: 4 },
+  qrTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A2E', marginBottom: 4 },
+  qrSub: { color: '#888', fontSize: 12, marginBottom: 16 },
+  qrWrapper: { width: 220, height: 220, justifyContent: 'center', alignItems: 'center', borderRadius: 16, overflow: 'hidden', backgroundColor: '#F5F5F5' },
+  qrImage: { width: 220, height: 220 },
+  qrOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E3F2FD', zIndex: 1 },
+  qrBadge: { backgroundColor: '#E3F2FD', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, marginTop: 14 },
+  qrBadgeText: { color: '#1565C0', fontSize: 12, fontWeight: '600' },
+  tokenText: { color: '#bbb', fontSize: 10, marginTop: 8, textAlign: 'center' },
+  endBtn: { borderRadius: 14, marginBottom: 32 },
 });
