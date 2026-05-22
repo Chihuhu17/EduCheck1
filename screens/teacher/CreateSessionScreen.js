@@ -1,7 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, StyleSheet, ScrollView, Image } from 'react-native';
-import { Text, Button, Card, ActivityIndicator, ProgressBar } from 'react-native-paper';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  Image,
+  TouchableOpacity,
+} from 'react-native';
+import { Text, ActivityIndicator, ProgressBar } from 'react-native-paper';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { QR_TOKEN_PREFIX } from '../../constants/config';
 
 // QR token cố định theo classId — sử dụng QR_TOKEN_PREFIX từ constants/config.js
@@ -31,59 +39,93 @@ export default function CreateSessionScreen() {
     setQrToken(token);
     setQrLoading(true);
 
-    // Chỉ đếm thời gian và simulate sinh viên điểm danh
     elapsedRef.current = setInterval(() => {
       setElapsed(e => e + 1);
-      setPresentCount(p => Math.min(p + Math.floor(Math.random() * 2), classInfo.students));
+      setPresentCount(p =>
+        Math.min(p + Math.floor(Math.random() * 2), classInfo.students)
+      );
     }, 3000);
   };
 
   const endSession = () => {
     clearInterval(elapsedRef.current);
-    navigation.navigate('LiveMonitor', { classInfo, presentCount, totalStudents: classInfo.students });
+    navigation.navigate('LiveMonitor', {
+      classInfo,
+      presentCount,
+      totalStudents: classInfo.students,
+    });
   };
 
   useEffect(() => {
     return () => { clearInterval(elapsedRef.current); };
   }, []);
 
-  const formatTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
-  const attendanceRate = classInfo.students > 0 ? presentCount / classInfo.students : 0;
+  const formatTime = s =>
+    `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+  const attendanceRate =
+    classInfo.students > 0 ? presentCount / classInfo.students : 0;
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ padding: 16 }}>
-      {/* Class Info */}
-      <View style={styles.infoCard}>
-        <View style={styles.infoLeft}>
-          <Text style={styles.infoSubject}>{classInfo.subject}</Text>
-          <Text style={styles.infoDetail}>🏫 {classInfo.room} • ⏰ {classInfo.time}</Text>
-          <Text style={styles.infoDetail}>📌 Lớp {classInfo.class} • 👥 {classInfo.students} sinh viên</Text>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={{ paddingBottom: 40 }}
+      showsVerticalScrollIndicator={false}
+    >
+      {/* ── Class info card (LinearGradient) ── */}
+      <LinearGradient
+        colors={['#0D47A1', '#1565C0']}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        style={styles.infoCard}
+      >
+        <View style={styles.infoCardBadge}>
+          <MaterialCommunityIcons name="school" size={14} color="#90CAF9" />
+          <Text style={styles.infoCardBadgeText}>Buổi học hôm nay</Text>
         </View>
-      </View>
+        <Text style={styles.infoSubject}>{classInfo.subject}</Text>
+        <View style={styles.infoDetailRow}>
+          <MaterialCommunityIcons name="door" size={14} color="#BBDEFB" />
+          <Text style={styles.infoDetail}>{classInfo.room}</Text>
+          <MaterialCommunityIcons name="clock-outline" size={14} color="#BBDEFB" style={{ marginLeft: 10 }} />
+          <Text style={styles.infoDetail}>{classInfo.time}</Text>
+        </View>
+        <View style={styles.infoDetailRow}>
+          <MaterialCommunityIcons name="tag" size={14} color="#90CAF9" />
+          <Text style={styles.infoDetailAlt}>Lớp {classInfo.class}</Text>
+          <MaterialCommunityIcons name="account-group" size={14} color="#90CAF9" style={{ marginLeft: 10 }} />
+          <Text style={styles.infoDetailAlt}>{classInfo.students} sinh viên</Text>
+        </View>
+      </LinearGradient>
 
       {!sessionActive ? (
+        /* ── Pre-session state ── */
         <View style={styles.startContainer}>
-          <View style={styles.startIconBox}>
-            <Text style={{ fontSize: 64 }}>📋</Text>
+          <View style={styles.startIconCircle}>
+            <Text style={{ fontSize: 52 }}>📋</Text>
           </View>
           <Text style={styles.startTitle}>Sẵn sàng điểm danh</Text>
           <Text style={styles.startSub}>
-            Mã QR cố định theo lớp học. Sinh viên quét mã này để điểm danh.
+            Mã QR cố định theo lớp học.{'\n'}Sinh viên quét mã này để điểm danh.
           </Text>
-          <Button
-            mode="contained"
-            icon="play-circle"
+          <TouchableOpacity
+            style={styles.startBtnWrapper}
             onPress={startSession}
-            style={styles.startBtn}
-            contentStyle={{ paddingVertical: 12 }}
-            buttonColor="#1565C0"
+            activeOpacity={0.85}
           >
-            Bắt đầu điểm danh
-          </Button>
+            <LinearGradient
+              colors={['#1565C0', '#1976D2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.startBtnGradient}
+            >
+              <MaterialCommunityIcons name="play-circle" size={20} color="#fff" />
+              <Text style={styles.startBtnText}>Bắt đầu điểm danh</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </View>
       ) : (
         <>
-          {/* Timer */}
+          {/* ── Timer row ── */}
           <View style={styles.timerRow}>
             <View style={styles.timerBox}>
               <Text style={styles.timerLabel}>⏱ Thời gian</Text>
@@ -91,52 +133,68 @@ export default function CreateSessionScreen() {
             </View>
             <View style={styles.timerBox}>
               <Text style={styles.timerLabel}>👥 Có mặt</Text>
-              <Text style={[styles.timerValue, { color: '#2E7D32' }]}>{presentCount}/{classInfo.students}</Text>
+              <Text style={[styles.timerValue, { color: '#2E7D32' }]}>
+                {presentCount}/{classInfo.students}
+              </Text>
             </View>
             <View style={styles.timerBox}>
               <Text style={styles.timerLabel}>📊 Tỉ lệ</Text>
-              <Text style={[styles.timerValue, { color: '#1565C0' }]}>{Math.round(attendanceRate * 100)}%</Text>
+              <Text style={[styles.timerValue, { color: '#1565C0' }]}>
+                {Math.round(attendanceRate * 100)}%
+              </Text>
             </View>
           </View>
 
-          {/* Progress */}
-          <ProgressBar progress={attendanceRate} color="#2E7D32" style={styles.progressBar} />
+          {/* ── Progress bar ── */}
+          <ProgressBar
+            progress={attendanceRate}
+            color="#1565C0"
+            style={styles.progressBar}
+          />
 
-          {/* QR Code */}
-          <Card style={styles.qrCard}>
-            <Card.Content style={{ alignItems: 'center' }}>
-              <Text style={styles.qrTitle}>Mã QR điểm danh</Text>
-              <Text style={styles.qrSub}>Sinh viên quét mã này để điểm danh</Text>
-              <View style={styles.qrWrapper}>
-                {qrLoading && (
-                  <View style={styles.qrOverlay}>
-                    <ActivityIndicator color="#1565C0" size="large" />
-                  </View>
-                )}
-                <Image
-                  source={{ uri: getQRImageUrl(qrToken) }}
-                  style={styles.qrImage}
-                  onLoad={() => setQrLoading(false)}
-                  onError={() => setQrLoading(false)}
-                />
-              </View>
-              <View style={styles.qrBadge}>
-                <Text style={styles.qrBadgeText}>🔒 Mã cố định theo lớp</Text>
-              </View>
-              <Text style={styles.tokenText}>{qrToken}</Text>
-            </Card.Content>
-          </Card>
+          {/* ── QR Card ── */}
+          <View style={styles.qrCard}>
+            <Text style={styles.qrTitle}>Mã QR điểm danh</Text>
+            <Text style={styles.qrSub}>Sinh viên quét mã này để điểm danh</Text>
 
-          <Button
-            mode="contained"
-            icon="stop-circle"
+            <View style={styles.qrWrapper}>
+              {qrLoading && (
+                <View style={styles.qrOverlay}>
+                  <ActivityIndicator color="#1565C0" size="large" />
+                </View>
+              )}
+              <Image
+                source={{ uri: getQRImageUrl(qrToken) }}
+                style={styles.qrImage}
+                onLoad={() => setQrLoading(false)}
+                onError={() => setQrLoading(false)}
+              />
+            </View>
+
+            <View style={styles.qrBadge}>
+              <MaterialCommunityIcons name="lock" size={13} color="#1565C0" />
+              <Text style={styles.qrBadgeText}>Mã cố định theo lớp</Text>
+            </View>
+
+            <Text style={styles.tokenText}>{qrToken}</Text>
+          </View>
+
+          {/* ── End session button ── */}
+          <TouchableOpacity
+            style={styles.endBtnWrapper}
             onPress={endSession}
-            style={styles.endBtn}
-            contentStyle={{ paddingVertical: 12 }}
-            buttonColor="#C62828"
+            activeOpacity={0.85}
           >
-            Kết thúc & Chốt sổ
-          </Button>
+            <LinearGradient
+              colors={['#C62828', '#E53935']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.endBtnGradient}
+            >
+              <MaterialCommunityIcons name="stop-circle" size={20} color="#fff" />
+              <Text style={styles.endBtnText}>Kết thúc &amp; Chốt sổ</Text>
+            </LinearGradient>
+          </TouchableOpacity>
         </>
       )}
     </ScrollView>
@@ -144,29 +202,140 @@ export default function CreateSessionScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F0F4FF' },
-  infoCard: { backgroundColor: '#1565C0', borderRadius: 16, padding: 16, marginBottom: 16 },
-  infoLeft: {},
-  infoSubject: { color: '#fff', fontWeight: 'bold', fontSize: 18, marginBottom: 6 },
-  infoDetail: { color: '#BBDEFB', fontSize: 13, marginTop: 3 },
-  startContainer: { alignItems: 'center', marginTop: 24, paddingHorizontal: 16 },
-  startIconBox: { width: 120, height: 120, borderRadius: 60, backgroundColor: '#E3F2FD', justifyContent: 'center', alignItems: 'center', marginBottom: 20 },
-  startTitle: { fontSize: 20, fontWeight: 'bold', color: '#1565C0', marginBottom: 10 },
-  startSub: { color: '#888', textAlign: 'center', lineHeight: 20, marginBottom: 28 },
-  startBtn: { borderRadius: 14, width: '100%' },
-  timerRow: { flexDirection: 'row', gap: 10, marginBottom: 12 },
-  timerBox: { flex: 1, backgroundColor: '#fff', borderRadius: 14, padding: 14, alignItems: 'center', elevation: 2 },
-  timerLabel: { color: '#888', fontSize: 11, marginBottom: 4 },
-  timerValue: { fontSize: 20, fontWeight: 'bold', color: '#1A1A2E' },
-  progressBar: { height: 8, borderRadius: 4, marginBottom: 16 },
-  qrCard: { borderRadius: 20, marginBottom: 16, elevation: 4 },
-  qrTitle: { fontSize: 16, fontWeight: 'bold', color: '#1A1A2E', marginBottom: 4 },
-  qrSub: { color: '#888', fontSize: 12, marginBottom: 16 },
-  qrWrapper: { width: 220, height: 220, justifyContent: 'center', alignItems: 'center', borderRadius: 16, overflow: 'hidden', backgroundColor: '#F5F5F5' },
+  container: { flex: 1, backgroundColor: '#EEF2FF' },
+
+  // Class info card
+  infoCard: {
+    borderRadius: 20,
+    padding: 20,
+    margin: 16,
+  },
+  infoCardBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 8,
+  },
+  infoCardBadgeText: { color: '#90CAF9', fontSize: 12 },
+  infoSubject: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 20,
+    marginBottom: 10,
+  },
+  infoDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 },
+  infoDetail: { color: '#BBDEFB', fontSize: 14 },
+  infoDetailAlt: { color: '#90CAF9', fontSize: 13 },
+
+  // Pre-session
+  startContainer: { alignItems: 'center', paddingHorizontal: 24, paddingTop: 16 },
+  startIconCircle: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: '#E3F2FD',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+    elevation: 2,
+    shadowColor: '#1565C0',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  startTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#0A1628',
+    marginBottom: 10,
+  },
+  startSub: {
+    color: '#94A3B8',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 28,
+    fontSize: 14,
+  },
+  startBtnWrapper: { borderRadius: 14, overflow: 'hidden', width: '100%' },
+  startBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 15,
+    borderRadius: 14,
+  },
+  startBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+
+  // Active session
+  timerRow: { flexDirection: 'row', gap: 10, marginHorizontal: 16, marginBottom: 12 },
+  timerBox: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 14,
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#1565C0',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+  },
+  timerLabel: { color: '#94A3B8', fontSize: 11, marginBottom: 4 },
+  timerValue: { fontSize: 20, fontWeight: 'bold', color: '#0A1628' },
+
+  progressBar: { height: 8, borderRadius: 4, marginHorizontal: 16, marginBottom: 16 },
+
+  qrCard: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 4,
+    shadowColor: '#1565C0',
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+  },
+  qrTitle: { fontSize: 16, fontWeight: 'bold', color: '#0A1628', marginBottom: 4 },
+  qrSub: { color: '#94A3B8', fontSize: 12, marginBottom: 16 },
+  qrWrapper: {
+    width: 220,
+    height: 220,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 16,
+    overflow: 'hidden',
+    backgroundColor: '#F5F5F5',
+  },
   qrImage: { width: 220, height: 220 },
-  qrOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', backgroundColor: '#E3F2FD', zIndex: 1 },
-  qrBadge: { backgroundColor: '#E3F2FD', borderRadius: 20, paddingHorizontal: 14, paddingVertical: 6, marginTop: 14 },
+  qrOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E3F2FD',
+    zIndex: 1,
+  },
+  qrBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#E3F2FD',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginTop: 14,
+  },
   qrBadgeText: { color: '#1565C0', fontSize: 12, fontWeight: '600' },
-  tokenText: { color: '#bbb', fontSize: 10, marginTop: 8, textAlign: 'center' },
-  endBtn: { borderRadius: 14, marginBottom: 32 },
+  tokenText: { color: '#CBD5E1', fontSize: 10, marginTop: 8, textAlign: 'center' },
+
+  endBtnWrapper: { marginHorizontal: 16, borderRadius: 14, overflow: 'hidden' },
+  endBtnGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 15,
+    borderRadius: 14,
+  },
+  endBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });
