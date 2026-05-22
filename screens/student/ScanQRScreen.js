@@ -4,11 +4,11 @@ import { Text, Button, Surface, ActivityIndicator } from 'react-native-paper';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { useAuth } from '../../context/AuthContext';
+import { ROOM_LAT, ROOM_LON, MAX_DISTANCE_M, QR_TOKEN_PREFIX } from '../../constants/config';
+import { CLASS_NAMES } from '../../constants/mockData';
 
-// Mock: tọa độ phòng học (Đại học Hòa Bình)
-const ROOM_LAT = 21.0285;
-const ROOM_LON = 105.8542;
-const MAX_DISTANCE_M = 500; // nới rộng cho demo
+// ROOM_LAT, ROOM_LON, MAX_DISTANCE_M được import từ constants/config.js
+
 
 function haversineDistance(lat1, lon1, lat2, lon2) {
   const R = 6371000;
@@ -57,13 +57,17 @@ export default function ScanQRScreen({ navigation }) {
         ROOM_LAT, ROOM_LON
       );
 
-      // 2. Kiểm tra QR hợp lệ (mock: QR phải chứa "EDUCHECK-")
-      if (!data.startsWith('EDUCHECK-')) {
+      // 2. Kiểm tra QR hợp lệ — token cố định dạng EDUCHECK-CLASS-{classId}
+      if (!data.startsWith(QR_TOKEN_PREFIX)) {
         setResult('error');
-        setMessage('Mã QR không hợp lệ hoặc đã hết hạn');
+        setMessage('Mã QR không hợp lệ hoặc không phải mã EduCheck');
         setProcessing(false);
         return;
       }
+
+      const classId = data.replace(QR_TOKEN_PREFIX, '');
+      // CLASS_NAMES được import từ constants/mockData.js
+      const className = CLASS_NAMES[classId] || `Lớp ${classId}`;
 
       // 3. Kiểm tra khoảng cách
       if (dist > MAX_DISTANCE_M) {
@@ -75,7 +79,7 @@ export default function ScanQRScreen({ navigation }) {
 
       // 4. Thành công
       setResult('success');
-      setMessage(`Điểm danh thành công!\nMôn: Lập trình Mobile\nThời gian: ${new Date().toLocaleTimeString('vi-VN')}`);
+      setMessage(`Điểm danh thành công!\nMôn: ${className}\nThời gian: ${new Date().toLocaleTimeString('vi-VN')}`);
     } catch (e) {
       setResult('error');
       setMessage('Có lỗi xảy ra, vui lòng thử lại');
