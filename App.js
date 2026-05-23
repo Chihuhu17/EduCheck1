@@ -18,12 +18,16 @@ const theme = {
   },
 };
 
+import { AppProvider } from './context/AppContext';
+
 export default function App() {
   return (
     <AuthProvider>
-      <PaperProvider theme={theme}>
-        <Navigation />
-      </PaperProvider>
+      <AppProvider>
+        <PaperProvider theme={theme}>
+          <Navigation />
+        </PaperProvider>
+      </AppProvider>
     </AuthProvider>
   );
 }

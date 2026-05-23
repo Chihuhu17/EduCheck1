@@ -3,15 +3,16 @@ import { View, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { Text, Card } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { MOCK_SESSION_HISTORY } from '../../constants/mockData';
+import { useAppContext } from '../../context/AppContext';
 
 export default function SessionHistoryScreen() {
+  const { sessionHistory } = useAppContext();
   const [expanded, setExpanded] = useState(null);
 
-  const totalSessions = MOCK_SESSION_HISTORY.length;
-  const avgRate = Math.round(
-    MOCK_SESSION_HISTORY.reduce((sum, s) => sum + Math.round((s.present / s.total) * 100), 0) / totalSessions
-  );
+  const totalSessions = sessionHistory.length;
+  const avgRate = totalSessions > 0 ? Math.round(
+    sessionHistory.reduce((sum, s) => sum + Math.round((s.present / s.total) * 100), 0) / totalSessions
+  ) : 0;
 
   return (
     <View style={styles.container}>
@@ -28,12 +29,12 @@ export default function SessionHistoryScreen() {
           <View style={styles.divider} />
           <MiniStat value={`${avgRate}%`} label="TB có mặt"  color="#81C784" />
           <View style={styles.divider} />
-          <MiniStat value={new Set(MOCK_SESSION_HISTORY.map(s => s.subject)).size} label="Môn học" color="#FFB74D" />
+          <MiniStat value={new Set(sessionHistory.map(s => s.subject)).size} label="Môn học" color="#FFB74D" />
         </View>
       </LinearGradient>
 
       <ScrollView contentContainerStyle={styles.list}>
-        {MOCK_SESSION_HISTORY.map(session => {
+        {sessionHistory.map(session => {
           const rate    = Math.round((session.present / session.total) * 100);
           const isOpen  = expanded === session.id;
           const rateColor = rate >= 85 ? '#2E7D32' : rate >= 70 ? '#E65100' : '#C62828';

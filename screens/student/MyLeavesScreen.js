@@ -48,10 +48,11 @@ export default function MyLeavesScreen({ navigation }) {
         </View>
       </LinearGradient>
 
-      {/* Filter chips */}
+      {/* Filter chips — style flexGrow:0 prevents vertical expansion */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0, flexShrink: 0 }}
         contentContainerStyle={styles.filterRow}
       >
         {FILTERS.map(f => (
@@ -66,7 +67,7 @@ export default function MyLeavesScreen({ navigation }) {
       </ScrollView>
 
       {/* List */}
-      <ScrollView contentContainerStyle={styles.list}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.list}>
         {filtered.length === 0 ? (
           <EmptyState />
         ) : (

@@ -19,9 +19,15 @@ export const DEMO_ACCOUNTS = [
 
 // --- Lịch học sinh viên ---
 export const MOCK_SCHEDULE = [
-  { id: '1', subject: 'Lập trình Mobile', room: 'P.301', time: '07:30 - 09:30', status: 'upcoming', teacher: 'Dư Đình Viên' },
-  { id: '2', subject: 'Cơ sở dữ liệu', room: 'P.205', time: '09:45 - 11:45', status: 'done', teacher: 'Nguyễn Văn A' },
-  { id: '3', subject: 'Mạng máy tính', room: 'P.102', time: '13:00 - 15:00', status: 'absent', teacher: 'Trần Thị B' },
+  { id: '1', subject: 'Lập trình Mobile', room: 'P.301', time: '07:30 - 09:30', status: 'upcoming', teacher: 'Dư Đình Viên', dayOfWeek: 1 },
+  { id: '2', subject: 'Cơ sở dữ liệu', room: 'P.205', time: '09:45 - 11:45', status: 'done', teacher: 'Nguyễn Văn An', dayOfWeek: 1 },
+  { id: '3', subject: 'Mạng máy tính', room: 'P.102', time: '13:00 - 15:00', status: 'absent', teacher: 'Trần Thị Bích', dayOfWeek: 2 },
+  { id: '4', subject: 'Toán rời rạc', room: 'P.301', time: '07:30 - 09:30', status: 'upcoming', teacher: 'Lê Minh Hoàng', dayOfWeek: 3 },
+  { id: '5', subject: 'Lập trình Mobile', room: 'P.301', time: '09:45 - 11:45', status: 'upcoming', teacher: 'Dư Đình Viên', dayOfWeek: 3 },
+  { id: '6', subject: 'Cơ sở dữ liệu', room: 'P.205', time: '07:30 - 09:30', status: 'upcoming', teacher: 'Nguyễn Văn An', dayOfWeek: 4 },
+  { id: '7', subject: 'Mạng máy tính', room: 'P.102', time: '09:45 - 11:45', status: 'upcoming', teacher: 'Trần Thị Bích', dayOfWeek: 5 },
+  { id: '8', subject: 'Kiến trúc máy tính', room: 'P.201', time: '13:00 - 15:00', status: 'upcoming', teacher: 'Phạm Thu Hà', dayOfWeek: 5 },
+  { id: '9', subject: 'Tiếng Anh', room: 'P.402', time: '07:30 - 09:30', status: 'upcoming', teacher: 'Ngô Thanh C', dayOfWeek: 6 },
 ];
 
 // --- Lịch sử điểm danh sinh viên ---
@@ -34,9 +40,12 @@ export const MOCK_HISTORY = [
 
 // --- Lịch dạy giảng viên ---
 export const MOCK_CLASSES = [
-  { id: '1', subject: 'Lập trình Mobile', class: '522CNT', room: 'P.301', time: '07:30', students: 32, done: false },
-  { id: '2', subject: 'Cơ sở dữ liệu', class: '521CNT', room: 'P.205', time: '09:45', students: 28, done: true },
-  { id: '3', subject: 'Mạng máy tính', class: '523CNT', room: 'P.102', time: '13:00', students: 35, done: false },
+  { id: '1', subject: 'Lập trình Mobile', class: '522CNT', room: 'P.301', time: '07:30', students: 32, done: false, dayOfWeek: 1 },
+  { id: '2', subject: 'Cơ sở dữ liệu', class: '521CNT', room: 'P.205', time: '09:45', students: 28, done: true, dayOfWeek: 1 },
+  { id: '3', subject: 'Mạng máy tính', class: '523CNT', room: 'P.102', time: '13:00', students: 35, done: false, dayOfWeek: 2 },
+  { id: '4', subject: 'Lập trình Mobile', class: '522CNT', room: 'P.301', time: '09:45', students: 32, done: false, dayOfWeek: 3 },
+  { id: '5', subject: 'Cơ sở dữ liệu', class: '521CNT', room: 'P.205', time: '07:30', students: 28, done: false, dayOfWeek: 4 },
+  { id: '6', subject: 'Mạng máy tính', class: '523CNT', room: 'P.102', time: '09:45', students: 35, done: false, dayOfWeek: 5 },
 ];
 
 // Mapping classId → tên môn học (dùng trong ScanQR)
