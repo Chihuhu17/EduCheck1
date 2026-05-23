@@ -17,15 +17,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import {
-  MOCK_STATS,
-  MOCK_STUDENTS_ADMIN,
-  MOCK_ACTIVITIES,
-  MOCK_TEACHERS,
-} from '../../constants/mockData';
-
-// MOCK_STATS, MOCK_STUDENTS_ADMIN, MOCK_ACTIVITIES, MOCK_TEACHERS
-// được import từ constants/mockData.js
+import { useAppContext } from '../../context/AppContext';
 
 const TABS = [
   { key: 'dashboard', label: 'Tổng quan',  icon: '📊' },
@@ -36,6 +28,7 @@ const TABS = [
 
 export default function AdminHome() {
   const { user, logout } = useAuth();
+  const { adminStats, adminStudents, adminActivities, adminTeachers } = useAppContext();
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const handleLogout = () => {
@@ -92,13 +85,13 @@ export default function AdminHome() {
       {/* ── Content ── */}
       <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
         {activeTab === 'dashboard' && (
-          <DashboardTab stats={MOCK_STATS} activities={MOCK_ACTIVITIES} />
+          <DashboardTab stats={adminStats} activities={adminActivities} />
         )}
         {activeTab === 'students' && (
-          <StudentsTab students={MOCK_STUDENTS_ADMIN} />
+          <StudentsTab students={adminStudents} />
         )}
         {activeTab === 'teachers' && (
-          <TeachersTab teachers={MOCK_TEACHERS} />
+          <TeachersTab teachers={adminTeachers} />
         )}
         {activeTab === 'settings' && <SettingsTab />}
       </ScrollView>
@@ -112,7 +105,7 @@ function DashboardTab({ stats, activities }) {
     <View style={{ padding: 16 }}>
       <View style={styles.statsGrid}>
         <StatCard icon="account-group"   label="Sinh viên"    value={stats.totalStudents}  color="#1565C0" />
-        <StatCard icon="teach"           label="Giảng viên"   value={stats.totalTeachers}  color="#2E7D32" />
+        <StatCard icon="human-male-board" label="Giảng viên"   value={stats.totalTeachers}  color="#2E7D32" />
         <StatCard icon="google-classroom" label="Lớp học"     value={stats.totalClasses}   color="#E65100" />
         <StatCard icon="calendar-check"  label="Phiên hôm nay" value={stats.todaySessions} color="#6A1B9A" />
       </View>

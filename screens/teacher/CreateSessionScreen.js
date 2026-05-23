@@ -11,6 +11,7 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { QR_TOKEN_PREFIX } from '../../constants/config';
+import { useAppContext } from '../../context/AppContext';
 
 // QR token cố định theo classId — sử dụng QR_TOKEN_PREFIX từ constants/config.js
 function getStaticQRToken(classId) {
@@ -26,34 +27,40 @@ export default function CreateSessionScreen() {
   const route = useRoute();
   const { classInfo } = route.params;
 
+  const { startSession: contextStartSession, endSession: contextEndSession, activeSession } = useAppContext();
+
   const [sessionActive, setSessionActive] = useState(false);
   const [qrToken, setQrToken] = useState('');
   const [elapsed, setElapsed] = useState(0);
-  const [presentCount, setPresentCount] = useState(0);
   const [qrLoading, setQrLoading] = useState(false);
   const elapsedRef = useRef(null);
 
+  // Số lượng sinh viên có mặt hiện tại dựa vào Global State
+  const presentCount = activeSession 
+    ? activeSession.students.filter(s => s.status === 'present').length 
+    : 0;
+
   const startSession = () => {
     const token = getStaticQRToken(classInfo.id);
+    
+    // Khởi tạo phiên trong Global State
+    contextStartSession(classInfo);
+
     setSessionActive(true);
     setQrToken(token);
     setQrLoading(true);
 
     elapsedRef.current = setInterval(() => {
       setElapsed(e => e + 1);
-      setPresentCount(p =>
-        Math.min(p + Math.floor(Math.random() * 2), classInfo.students)
-      );
-    }, 3000);
+    }, 1000); // Tăng từng giây thực tế
   };
 
   const endSession = () => {
     clearInterval(elapsedRef.current);
-    navigation.navigate('LiveMonitor', {
-      classInfo,
-      presentCount,
-      totalStudents: classInfo.students,
-    });
+    // Kết thúc phiên trong Global State
+    contextEndSession();
+    // Quay về màn hình chủ
+    navigation.goBack();
   };
 
   useEffect(() => {
@@ -179,22 +186,42 @@ export default function CreateSessionScreen() {
             <Text style={styles.tokenText}>{qrToken}</Text>
           </View>
 
-          {/* ── End session button ── */}
-          <TouchableOpacity
-            style={styles.endBtnWrapper}
-            onPress={endSession}
-            activeOpacity={0.85}
-          >
-            <LinearGradient
-              colors={['#C62828', '#E53935']}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 0 }}
-              style={styles.endBtnGradient}
+          {/* ── Action buttons ── */}
+          <View style={{ flexDirection: 'row', paddingHorizontal: 20, gap: 10, marginTop: 10 }}>
+            {/* View live monitor button */}
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={() => navigation.navigate('LiveMonitor', { classInfo })}
+              activeOpacity={0.85}
             >
-              <MaterialCommunityIcons name="stop-circle" size={20} color="#fff" />
-              <Text style={styles.endBtnText}>Kết thúc &amp; Chốt sổ</Text>
-            </LinearGradient>
-          </TouchableOpacity>
+              <LinearGradient
+                colors={['#1565C0', '#1976D2']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.endBtnGradient}
+              >
+                <MaterialCommunityIcons name="format-list-bulleted" size={18} color="#fff" />
+                <Text style={styles.endBtnText}>Xem danh sách</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+
+            {/* End session button */}
+            <TouchableOpacity
+              style={{ flex: 1 }}
+              onPress={endSession}
+              activeOpacity={0.85}
+            >
+              <LinearGradient
+                colors={['#C62828', '#E53935']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={styles.endBtnGradient}
+              >
+                <MaterialCommunityIcons name="stop-circle" size={18} color="#fff" />
+                <Text style={styles.endBtnText}>Kết thúc phiên</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
         </>
       )}
     </ScrollView>

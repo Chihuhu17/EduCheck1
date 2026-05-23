@@ -9,7 +9,7 @@ import {
 import { Text, Avatar, Chip } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../context/AuthContext';
-import { MOCK_SCHEDULE, MOCK_HISTORY } from '../../constants/mockData';
+import { useAppContext } from '../../context/AppContext';
 
 const scheduleStatus = {
   upcoming: { label: 'Sắp học', color: '#1565C0', bg: '#E3F2FD' },
@@ -31,7 +31,26 @@ const barColor = {
 
 export default function StudentHome({ navigation }) {
   const { user, logout } = useAuth();
+  const { schedule, history } = useAppContext();
   const [tab, setTab] = useState('schedule');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const generateWeekDays = () => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 is Sunday
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - (currentDay === 0 ? 6 : currentDay - 1)); // Monday
+    
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      week.push(date);
+    }
+    return week;
+  };
+  const weekDays = generateWeekDays();
+  const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
   const handleLogout = () => {
     Alert.alert('Đăng xuất', 'Bạn có chắc muốn đăng xuất?', [
@@ -41,10 +60,10 @@ export default function StudentHome({ navigation }) {
   };
 
   // Tính stats từ lịch sử
-  const presentCount = MOCK_HISTORY.filter(h => h.status === 'present').length;
-  const absentCount = MOCK_HISTORY.filter(h => h.status === 'absent').length;
-  const lateCount = MOCK_HISTORY.filter(h => h.status === 'late').length;
-  const total = MOCK_HISTORY.length;
+  const presentCount = history.filter(h => h.status === 'present').length;
+  const absentCount = history.filter(h => h.status === 'absent').length;
+  const lateCount = history.filter(h => h.status === 'late').length;
+  const total = history.length;
   const rate = total > 0 ? Math.round((presentCount / total) * 100) : 0;
 
   const initials = user.name.split(' ').pop().charAt(0).toUpperCase();
@@ -90,7 +109,7 @@ export default function StudentHome({ navigation }) {
       {/* QR Scan Button */}
       <TouchableOpacity
         style={styles.scanBtnWrapper}
-        onPress={() => navigation.navigate('ScanQR')}
+        onPress={() => navigation.navigate('ScanTab')}
         activeOpacity={0.88}
       >
         <LinearGradient
@@ -138,24 +157,52 @@ export default function StudentHome({ navigation }) {
       >
         {tab === 'schedule' ? (
           <>
-            {MOCK_SCHEDULE.map(item => (
-              <View key={item.id} style={styles.scheduleCard}>
-                {/* Colored bar */}
-                <View style={[styles.cardBar, { backgroundColor: barColor[item.status] }]} />
-                <View style={styles.cardBody}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.subjectName}>{item.subject}</Text>
-                    <Text style={styles.subjectMeta}>🏫 {item.room}  ⏰ {item.time}</Text>
-                    <Text style={styles.subjectMeta}>👨‍🏫 {item.teacher}</Text>
-                  </View>
-                  <View style={[styles.statusChip, { backgroundColor: scheduleStatus[item.status].bg }]}>
-                    <Text style={[styles.statusChipText, { color: scheduleStatus[item.status].color }]}>
-                      {scheduleStatus[item.status].label}
-                    </Text>
+            <View style={styles.weekContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekScroll}>
+                {weekDays.map((date, index) => {
+                  const isSelected = date.toDateString() === selectedDate.toDateString();
+                  const isToday = date.toDateString() === new Date().toDateString();
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[styles.dayCard, isSelected && styles.dayCardActive]}
+                      onPress={() => setSelectedDate(date)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.dayName, isSelected && styles.dayTextActive]}>{daysOfWeek[index]}</Text>
+                      <Text style={[styles.dayNumber, isSelected && styles.dayTextActive]}>{date.getDate()}</Text>
+                      {isToday && <View style={[styles.todayDot, isSelected && {backgroundColor: '#fff'}]} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {schedule.filter(item => item.dayOfWeek === selectedDate.getDay()).length > 0 ? (
+              schedule.filter(item => item.dayOfWeek === selectedDate.getDay()).map(item => (
+                <View key={item.id} style={styles.scheduleCard}>
+                  {/* Colored bar */}
+                  <View style={[styles.cardBar, { backgroundColor: barColor[item.status] || '#1565C0' }]} />
+                  <View style={styles.cardBody}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.subjectName}>{item.subject}</Text>
+                      <Text style={styles.subjectMeta}>🏫 {item.room}  ⏰ {item.time}</Text>
+                      <Text style={styles.subjectMeta}>👨‍🏫 {item.teacher}</Text>
+                    </View>
+                    <View style={[styles.statusChip, { backgroundColor: scheduleStatus[item.status]?.bg || '#E3F2FD' }]}>
+                      <Text style={[styles.statusChipText, { color: scheduleStatus[item.status]?.color || '#1565C0' }]}>
+                        {scheduleStatus[item.status]?.label || 'Chưa rõ'}
+                      </Text>
+                    </View>
                   </View>
                 </View>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyStateEmoji}>🏖️</Text>
+                <Text style={styles.emptyStateText}>Không có lịch học</Text>
               </View>
-            ))}
+            )}
 
             {/* Leave request button */}
             <TouchableOpacity
@@ -169,7 +216,7 @@ export default function StudentHome({ navigation }) {
           </>
         ) : (
           <>
-            {MOCK_HISTORY.map(item => (
+            {history.map(item => (
               <View key={item.id} style={styles.historyCard}>
                 <Text style={styles.historyIcon}>{historyStatus[item.status].icon}</Text>
                 <View style={{ flex: 1, marginLeft: 12 }}>
@@ -413,5 +460,65 @@ const styles = StyleSheet.create({
     color: '#1565C0',
     fontWeight: 'bold',
     fontSize: 14,
+  },
+  weekContainer: {
+    marginBottom: 16,
+  },
+  weekScroll: {
+    paddingRight: 16,
+    gap: 10,
+  },
+  dayCard: {
+    width: 48,
+    height: 64,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#1565C0',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  dayCardActive: {
+    backgroundColor: '#1565C0',
+  },
+  dayName: {
+    fontSize: 11,
+    color: '#94A3B8',
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  dayNumber: {
+    fontSize: 16,
+    color: '#0A1628',
+    fontWeight: 'bold',
+  },
+  dayTextActive: {
+    color: '#fff',
+  },
+  todayDot: {
+    width: 4,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: '#1565C0',
+    marginTop: 4,
+  },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 10,
+  },
+  emptyStateEmoji: {
+    fontSize: 48,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    color: '#94A3B8',
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

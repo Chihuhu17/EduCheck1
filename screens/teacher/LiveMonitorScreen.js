@@ -10,9 +10,7 @@ import { Text, Avatar, Chip, Searchbar } from 'react-native-paper';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { MOCK_STUDENTS_ATTENDANCE } from '../../constants/mockData';
-
-// MOCK_STUDENTS_ATTENDANCE được import từ constants/mockData.js
+import { useAppContext } from '../../context/AppContext';
 
 const statusConfig = {
   present: { label: 'Có mặt',  color: '#2E7D32', bg: '#E8F5E9', icon: 'check-circle',      barColor: '#2E7D32' },
@@ -30,27 +28,13 @@ const FILTERS = [
 export default function LiveMonitorScreen() {
   const route = useRoute();
   const navigation = useNavigation();
-  const { classInfo, presentCount: passedPresent } = route.params;
+  const { classInfo } = route.params;
+  const { activeSession } = useAppContext();
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  // Nếu có presentCount từ CreateSession, cập nhật trạng thái SV
-  const students = React.useMemo(() => {
-    if (!passedPresent) return MOCK_STUDENTS_ATTENDANCE;
-    const shuffled = [...MOCK_STUDENTS_ATTENDANCE];
-    let presentSet = 0;
-    return shuffled.map(s => {
-      if (presentSet < passedPresent && s.status !== 'late') {
-        presentSet++;
-        return {
-          ...s,
-          status: 'present',
-          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        };
-      }
-      return s;
-    });
-  }, [passedPresent]);
+  // Lấy danh sách SV từ phiên đang hoạt động
+  const students = activeSession ? activeSession.students : [];
 
   const present = students.filter(s => s.status === 'present').length;
   const absent  = students.filter(s => s.status === 'absent').length;

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, Modal, Alert, Image,
+  Platform, Alert, Image,
 } from 'react-native';
 import { Text, TextInput, Button, HelperText } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -199,34 +199,33 @@ export default function LeaveRequestScreen({ navigation }) {
       </TouchableOpacity>
       {errors.date && <Text style={styles.errorText}>⚠️ {errors.date}</Text>}
 
-      {/* iOS: modal bọc picker */}
+      {/* iOS: inline calendar picker bên dưới button (KHÔNG dùng Modal) */}
       {Platform.OS === 'ios' && showDatePicker && (
-        <Modal transparent animationType="slide">
-          <View style={styles.iosModalOverlay}>
-            <View style={styles.iosModalCard}>
-              <View style={styles.iosModalHeader}>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={{ color: '#888', fontWeight: '600' }}>Hủy</Text>
-                </TouchableOpacity>
-                <Text style={{ fontWeight: 'bold', color: '#1565C0' }}>Chọn ngày nghỉ</Text>
-                <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                  <Text style={{ color: '#1565C0', fontWeight: '700' }}>Xong</Text>
-                </TouchableOpacity>
-              </View>
-              <DateTimePicker
-                value={selectedDate || new Date()}
-                mode="date"
-                display="spinner"
-                minimumDate={new Date()}
-                onChange={onDateChange}
-                locale="vi-VN"
-              />
-            </View>
-          </View>
-        </Modal>
+        <View style={styles.iosInlinePicker}>
+          <TouchableOpacity
+            style={styles.iosDoneRow}
+            onPress={() => setShowDatePicker(false)}
+          >
+            <Text style={styles.iosDoneText}>Xong ✓</Text>
+          </TouchableOpacity>
+          <DateTimePicker
+            value={selectedDate || new Date()}
+            mode="date"
+            display="inline"
+            minimumDate={new Date()}
+            onChange={(event, date) => {
+              if (date) {
+                setSelectedDate(date);
+                setErrors(e => ({ ...e, date: null }));
+              }
+            }}
+            accentColor="#1565C0"
+            themeVariant="light"
+          />
+        </View>
       )}
 
-      {/* Android: hiển thị trực tiếp */}
+      {/* Android: hiển thị dialog native */}
       {Platform.OS === 'android' && showDatePicker && (
         <DateTimePicker
           value={selectedDate || new Date()}
@@ -379,10 +378,26 @@ const styles = StyleSheet.create({
   datePlaceholder: { color: '#aaa', fontWeight: '400' },
   datePickerArrow: { fontSize: 20, color: '#1565C0', fontWeight: 'bold' },
 
-  // iOS Modal
-  iosModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  iosModalCard: { backgroundColor: '#fff', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 32 },
-  iosModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#eee' },
+  // iOS Inline Calendar Picker (display="inline" works, Modal+spinner does NOT work)
+  iosInlinePicker: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    overflow: 'hidden',
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  iosDoneRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    backgroundColor: '#F8FAFF',
+  },
+  iosDoneText: { color: '#1565C0', fontWeight: '700', fontSize: 14 },
 
   // Web fallback
   webDateBox: { backgroundColor: '#fff', borderRadius: 12, padding: 12, borderWidth: 1.5, borderColor: '#1565C0' },

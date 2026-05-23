@@ -10,7 +10,7 @@ import { Text, Avatar, Chip, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
-import { MOCK_CLASSES } from '../../constants/mockData';
+import { useAppContext } from '../../context/AppContext';
 
 const leaveStatusConfig = {
   pending:  { label: 'Chờ duyệt', color: '#E65100', bg: '#FFF3E0' },
@@ -20,7 +20,26 @@ const leaveStatusConfig = {
 
 export default function TeacherHome({ navigation }) {
   const { user, logout, leaves, updateLeave } = useAuth();
+  const { teacherClasses } = useAppContext();
   const [tab, setTab] = useState('classes');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+
+  const generateWeekDays = () => {
+    const today = new Date();
+    const currentDay = today.getDay(); // 0 is Sunday
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - (currentDay === 0 ? 6 : currentDay - 1)); // Monday
+    
+    const week = [];
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      week.push(date);
+    }
+    return week;
+  };
+  const weekDays = generateWeekDays();
+  const daysOfWeek = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
 
   const handleLeave = (id, action) => updateLeave(id, action);
 
@@ -62,11 +81,11 @@ export default function TeacherHome({ navigation }) {
 
         {/* Stats row */}
         <View style={styles.statsRow}>
-          <StatItem value={MOCK_CLASSES.length} label="Lớp hôm nay" color="#4FC3F7" />
+          <StatItem value={teacherClasses.length} label="Lớp hôm nay" color="#4FC3F7" />
           <View style={styles.statDivider} />
-          <StatItem value={MOCK_CLASSES.filter(c => c.done).length} label="Đã điểm danh" color="#81C784" />
+          <StatItem value={teacherClasses.filter(c => c.done).length} label="Đã điểm danh" color="#81C784" />
           <View style={styles.statDivider} />
-          <StatItem value={MOCK_CLASSES.filter(c => !c.done).length} label="Chưa bắt đầu" color="#FFB74D" />
+          <StatItem value={teacherClasses.filter(c => !c.done).length} label="Chưa bắt đầu" color="#FFB74D" />
           <View style={styles.statDivider} />
           <StatItem value={pendingCount} label="Đơn chờ" color="#EF9A9A" />
         </View>
@@ -107,8 +126,31 @@ export default function TeacherHome({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         {tab === 'classes' ? (
-          MOCK_CLASSES.map(cls => (
-            <View key={cls.id} style={[styles.card, cls.done && styles.cardDone]}>
+          <>
+            <View style={styles.weekContainer}>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.weekScroll}>
+                {weekDays.map((date, index) => {
+                  const isSelected = date.toDateString() === selectedDate.toDateString();
+                  const isToday = date.toDateString() === new Date().toDateString();
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      style={[styles.dayCard, isSelected && styles.dayCardActive]}
+                      onPress={() => setSelectedDate(date)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={[styles.dayName, isSelected && styles.dayTextActive]}>{daysOfWeek[index]}</Text>
+                      <Text style={[styles.dayNumber, isSelected && styles.dayTextActive]}>{date.getDate()}</Text>
+                      {isToday && <View style={[styles.todayDot, isSelected && {backgroundColor: '#fff'}]} />}
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            {teacherClasses.filter(cls => cls.dayOfWeek === selectedDate.getDay()).length > 0 ? (
+              teacherClasses.filter(cls => cls.dayOfWeek === selectedDate.getDay()).map(cls => (
+                <View key={cls.id} style={[styles.card, cls.done && styles.cardDone]}>
               {/* Colored left bar */}
               <View
                 style={[
@@ -170,6 +212,13 @@ export default function TeacherHome({ navigation }) {
               </View>
             </View>
           ))
+        ) : (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyStateEmoji}>🏖️</Text>
+            <Text style={styles.emptyStateText}>Không có lịch dạy</Text>
+          </View>
+        )}
+        </>
         ) : (
           leaves.map(leave => (
             <View key={leave.id} style={styles.card}>
@@ -425,4 +474,33 @@ const styles = StyleSheet.create({
     borderColor: '#C62828',
   },
   rejectBtnText: { color: '#C62828', fontWeight: 'bold', fontSize: 13 },
+  weekContainer: { marginBottom: 16 },
+  weekScroll: { paddingRight: 16, gap: 10 },
+  dayCard: {
+    width: 48,
+    height: 64,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+    shadowColor: '#1565C0',
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+  },
+  dayCardActive: { backgroundColor: '#1565C0' },
+  dayName: { fontSize: 11, color: '#94A3B8', fontWeight: '600', marginBottom: 4 },
+  dayNumber: { fontSize: 16, color: '#0A1628', fontWeight: 'bold' },
+  dayTextActive: { color: '#fff' },
+  todayDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: '#1565C0', marginTop: 4 },
+  emptyState: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 32,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    marginBottom: 10,
+  },
+  emptyStateEmoji: { fontSize: 48, marginBottom: 8 },
+  emptyStateText: { color: '#94A3B8', fontSize: 14, fontWeight: '500' },
 });

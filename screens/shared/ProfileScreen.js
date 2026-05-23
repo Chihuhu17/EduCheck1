@@ -13,7 +13,7 @@ export default function ProfileScreen() {
   const isAdmin   = user?.role === 'admin';
 
   const roleLabel = isStudent ? 'Sinh viên' : isTeacher ? 'Giảng viên' : 'Quản trị viên';
-  const roleIcon  = isStudent ? 'school' : isTeacher ? 'teach' : 'shield-account';
+  const roleIcon  = isStudent ? 'school' : isTeacher ? 'human-male-board' : 'shield-account';
   const initials  = user?.name?.split(' ').slice(-1)[0]?.charAt(0) ?? 'U';
 
   const handleLogout = () => {

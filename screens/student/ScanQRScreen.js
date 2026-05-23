@@ -12,6 +12,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { useAuth } from '../../context/AuthContext';
+import { useAppContext } from '../../context/AppContext';
 import { ROOM_LAT, ROOM_LON, MAX_DISTANCE_M, QR_TOKEN_PREFIX } from '../../constants/config';
 import { CLASS_NAMES } from '../../constants/mockData';
 
@@ -28,6 +29,7 @@ function haversineDistance(lat1, lon1, lat2, lon2) {
 
 export default function ScanQRScreen({ navigation }) {
   const { user } = useAuth();
+  const { markAttendance } = useAppContext();
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
   const [processing, setProcessing] = useState(false);
@@ -105,6 +107,7 @@ export default function ScanQRScreen({ navigation }) {
       }
 
       // 4. Thành công
+      markAttendance(classId, user.studentCode);
       setResult('success');
       setMessage(`Môn: ${className}\nThời gian: ${new Date().toLocaleTimeString('vi-VN')}`);
     } catch (e) {
